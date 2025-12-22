@@ -25,7 +25,7 @@ class VectorStoreBuilder:
         texts = splitter.split_documents(data)
 
         db = Chroma.from_documents(texts,self.embedding,persist_directory=self.persist_dir)
-        db.persist()
+        # Note: persist() is deprecated - ChromaDB now auto-persists
 
     def load_vector_store(self):
         return Chroma(persist_directory=self.persist_dir,embedding_function=self.embedding)
