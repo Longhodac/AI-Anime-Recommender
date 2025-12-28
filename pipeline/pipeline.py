@@ -1,6 +1,13 @@
+import sys
+from pathlib import Path
+
+# Add project root to Python path
+project_root = Path(__file__).parent.parent
+sys.path.insert(0, str(project_root))
+
 from src.vector_store import VectorStoreBuilder
 from src.recommender import AnimeRecommender
-from config.config import GROQ_API_KEY,MODEL_NAME
+from config.config import GROQ_API_KEY, MODEL_NAME
 from utils.logger import get_logger
 from utils.custom_exception import CustomException
 
