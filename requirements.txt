@@ -1,9 +1,11 @@
 langchain
+langchain-core
 langchain-community
-langchain_groq
+langchain-groq
+langchain-huggingface
+langchain-text-splitters
 chromadb
 streamlit
 pandas
 python-dotenv
 sentence-transformers
-langchain_huggingface
