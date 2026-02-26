@@ -8,6 +8,121 @@ This project is a conversational anime recommender that allows users to describe
 
 For example, a user can ask for "light hearted anime with school settings" and receive three tailored recommendations, each with a plot summary and explanation of why it matches their preferences.
 
+## System Design
+
+### High-Level Architecture
+
+```mermaid
+flowchart TB
+    subgraph offline["Offline (Build Pipeline)"]
+        CSV[(anime_with_synopsis.csv)]
+        DL[AnimeDataLoader]
+        VSB[VectorStoreBuilder]
+        HF[HuggingFace Embeddings]
+        CHROMA[(ChromaDB)]
+        CSV --> DL
+        DL --> VSB
+        VSB --> HF
+        HF --> CHROMA
+    end
+
+    subgraph online["Online (Recommendation)"]
+        USER[User]
+        ST[Streamlit App]
+        PIPELINE[AnimeRecommendationPipeline]
+        RETRIEVER[ChromaDB Retriever]
+        LLM[Groq LLM]
+        USER --> ST
+        ST --> PIPELINE
+        PIPELINE --> RETRIEVER
+        PIPELINE --> LLM
+        RETRIEVER --> CHROMA
+        LLM --> USER
+    end
+```
+
+### Data Pipeline (Offline)
+
+```mermaid
+flowchart LR
+    A[CSV: Name, Genres, Synopsis] --> B[AnimeDataLoader]
+    B --> C[combined_info text]
+    C --> D[CSVLoader + TextSplitter]
+    D --> E[HuggingFace Embeddings]
+    E --> F[(ChromaDB Vector Store)]
+```
+
+### Recommendation Pipeline (Online)
+
+```mermaid
+sequenceDiagram
+    participant User
+    participant Streamlit
+    participant Pipeline
+    participant Retriever
+    participant ChromaDB
+    participant LLM as Groq LLM
+
+    User->>Streamlit: Enter preference (natural language)
+    Streamlit->>Pipeline: recommend(query)
+    Pipeline->>Retriever: similarity_search(query)
+    Retriever->>ChromaDB: query embedding + k-NN
+    ChromaDB-->>Retriever: top-k anime documents
+    Retriever-->>Pipeline: context docs
+    Pipeline->>LLM: prompt(context, question)
+    LLM-->>Pipeline: 3 recommendations + explanations
+    Pipeline-->>Streamlit: markdown response
+    Streamlit-->>User: Display recommendations
+```
+
+### RAG Chain (LCEL)
+
+```mermaid
+flowchart LR
+    Q[User Query] --> R[Retriever]
+    R --> F[format_docs]
+    Q --> P[Prompt Template]
+    F --> P
+    P --> LLM[ChatGroq]
+    LLM --> O[StrOutputParser]
+    O --> RESP[Recommendations]
+```
+
+### Component Overview
+
+```mermaid
+flowchart TB
+    subgraph app["app/"]
+        APP[app.py - Streamlit UI]
+    end
+
+    subgraph pipeline["pipeline/"]
+        BP[build_pipeline.py]
+        PL[pipeline.py - AnimeRecommendationPipeline]
+    end
+
+    subgraph src["src/"]
+        DL[data_loader.py - AnimeDataLoader]
+        VS[vector_store.py - VectorStoreBuilder]
+        REC[recommender.py - AnimeRecommender]
+        PT[prompt_template.py]
+    end
+
+    subgraph external["External Services"]
+        HF[HuggingFace - Embeddings]
+        GROQ[Groq - LLM]
+    end
+
+    APP --> PL
+    BP --> DL
+    BP --> VS
+    PL --> VS
+    PL --> REC
+    REC --> PT
+    VS --> HF
+    REC --> GROQ
+```
+
 ## How It Works
 
 The system operates in two stages:
